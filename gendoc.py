@@ -26,6 +26,22 @@ parser.add_argument("outputfile", type=str,
 
 args = parser.parse_args()
 
+#def open_and_read(file):
+    #with open("textfile", "r", encoding="utf8") as f:
+     #   text = f.read()
+      #  wordlist = text.split(" ")
+    #return wordlist
+
+def to_lower(wordlist):
+    words = []
+    for w in wordlist:
+        s = w.lower()
+        words.append(s)
+    return words
+
+def most_common(words, nr=10):
+    return Counter(words).most_common(nr)
+
 print("Loading data from directory {}.".format(args.foldername))
 
 if not args.basedims:
@@ -43,3 +59,12 @@ if args.svddims:
 # PARAMETERS.
 
 print("Writing matrix to {}.".format(args.outputfile))
+
+
+#python3 gendoc.py [-T|--tfidf] [-Sn|--svd n] [-Bm | --base-vocab m] foldername outputfile.txt
+
+
+#preprocess, lowercase, remove punctuations
+#turning list of tokens into counts
+#couts into vectors Panda
+#transform panda np.array on dataframe of panda

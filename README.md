@@ -2,7 +2,7 @@
 
 From Asad Sayeed's statistical NLP course at the University of Gothenburg.
 
-My name: Iris Epple does it work?
+My name: Iris Epple
 
 ## Additional instructions
 
