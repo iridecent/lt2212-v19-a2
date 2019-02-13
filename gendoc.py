@@ -26,11 +26,11 @@ parser.add_argument("outputfile", type=str,
 
 args = parser.parse_args()
 
-#def open_and_read(file):
-    #with open("textfile", "r", encoding="utf8") as f:
-     #   text = f.read()
-      #  wordlist = text.split(" ")
-    #return wordlist
+def open_and_read(file):
+    with open("textfile", "r", encoding="utf8") as f:
+        text = f.read()
+        wordlist = text.split(" ")
+    return wordlist
 
 def to_lower(wordlist):
     words = []
@@ -65,6 +65,11 @@ print("Writing matrix to {}.".format(args.outputfile))
 
 
 #preprocess, lowercase, remove punctuations
-#turning list of tokens into counts
-#couts into vectors Panda
+#create dictionary with words in all documents          sklearn countvectorizer
+#fill in  dictionary for each document
+#turning into list
+#put list into panda
 #transform panda np.array on dataframe of panda
+
+
+#have list and dictionary at the same time: [3,5,6, ..., 7, ..] dict: index of list -> token and dict: tokens -> index
