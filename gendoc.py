@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.feature_extraction.text import CountVectorizer
 
 # gendoc.py -- Don't forget to put a reasonable amount code comments
 # in so that we better understand what you're doing when we grade!
@@ -26,21 +27,17 @@ parser.add_argument("outputfile", type=str,
 
 args = parser.parse_args()
 
-def open_and_read(file):
-    with open("textfile", "r", encoding="utf8") as f:
-        text = f.read()
-        wordlist = text.split(" ")
-    return wordlist
 
-def to_lower(wordlist):
-    words = []
-    for w in wordlist:
-        s = w.lower()
-        words.append(s)
-    return words
+def create_feature_vectors(folder):
+    #(folder/subfolder1) (folder/subfolder2)
 
-def most_common(words, nr=10):
-    return Counter(words).most_common(nr)
+
+
+
+
+
+
+
 
 print("Loading data from directory {}.".format(args.foldername))
 
@@ -65,7 +62,7 @@ print("Writing matrix to {}.".format(args.outputfile))
 
 
 #preprocess, lowercase, remove punctuations
-#create dictionary with words in all documents          sklearn countvectorizer
+#create dictionary with words in all documents          sklearn countvectorizer https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
 #fill in  dictionary for each document
 #turning into list
 #put list into panda
