@@ -1,3 +1,4 @@
+import re
 import os, sys
 import glob
 import argparse
@@ -5,7 +6,6 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.feature_extraction.text import CountVectorizer
 
 # gendoc.py -- Don't forget to put a reasonable amount code comments
 # in so that we better understand what you're doing when we grade!
@@ -28,18 +28,51 @@ parser.add_argument("outputfile", type=str,
 args = parser.parse_args()
 
 
-def create_feature_vectors(folder):
-    #(folder/subfolder1) (folder/subfolder2)
+def create_vectorspace(folder):
+    """Creating a dictionary containing all occuring words in all documents as keys"""
+    allwords = []
+    vocabulary = {}
+    for topic in os.listdir(folder):
+        subfolder_path = os.path.join(folder, topic)
+        for file in os.listdir(subfolder_path):
+            file_path = os.path.join(subfolder_path, file)
+            with open(file_path, "r", encoding="utf8") as f:
+                text = f.read()
+                nopunct = re.sub(r"\d+|[!,\.\*\-\–:;%&?€\+#@£$∞§\|\/\[\]\(\)\{\}\"\„\“\'\´«»\n]+","", text.lower())
+                words = nopunct.split(" ")
+                allwords += words
+    for word in allwords:
+        vocabulary[word] = 0
+    return vocabulary
 
 
+def create_vectors(folder):
+    """Creating feature vectors for every document"""
+    vectors = {}
+    topics = {}
+    filenames = {}
 
-
-
-
+    for topic in os.listdir(folder):
+        subfolder_path = os.path.join(folder, topic)
+        for file in os.listdir(subfolder_path):
+            file_path = os.path.join(subfolder_path, file)
+            counts = create_vectorspace(folder)
+            with open(file_path, "r", encoding="utf8") as f:
+                text = f.read()
+                nopunct = re.sub(r"\d+|[!,\.\*\-\–:;%&?€\+#@£$∞§\|\/\[\]\(\)\{\}\"\„\“\'\´«»\n]+","", text.lower())
+                words = nopunct.split(" ")
+                for word in words:
+                    counts[word] += 1
+            filenames[file] = counts
+        topics[topic] = filenames
+    vectors[folder] = topics
+    return vectors
 
 
 
 print("Loading data from directory {}.".format(args.foldername))
+
+print(create_vectors(args.foldername))
 
 if not args.basedims:
     print("Using full vocabulary.")
@@ -62,8 +95,10 @@ print("Writing matrix to {}.".format(args.outputfile))
 
 
 #preprocess, lowercase, remove punctuations
-#create dictionary with words in all documents          sklearn countvectorizer https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
-#fill in  dictionary for each document
+#create dictionary with words in all documents
+
+# fill in  dictionary for each document
+
 #turning into list
 #put list into panda
 #transform panda np.array on dataframe of panda
