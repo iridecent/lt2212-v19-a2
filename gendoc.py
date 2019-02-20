@@ -51,7 +51,6 @@ def create_vectors(folder):
     vectors = {}
     topics = {}
     filenames = {}
-
     for topic in os.listdir(folder):
         subfolder_path = os.path.join(folder, topic)
         for file in os.listdir(subfolder_path):
