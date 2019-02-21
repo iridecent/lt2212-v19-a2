@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfTransformer
+from collections import Counter
 
 # gendoc.py -- Don't forget to put a reasonable amount code comments
 # in so that we better understand what you're doing when we grade!
@@ -28,10 +29,10 @@ parser.add_argument("outputfile", type=str,
 args = parser.parse_args()
 
 
-def create_vectorspace(folder):
+
+def create_vectorspace(folder, m=None):
     """Creating a dictionary containing all occuring words in all documents as keys"""
     allwords = []
-    vocabulary = {}
     for topic in os.listdir(folder):
         subfolder_path = os.path.join(folder, topic)
         for file in os.listdir(subfolder_path):
@@ -41,12 +42,15 @@ def create_vectorspace(folder):
                 nopunct = re.sub(r"\d+|[!,\.\*\-\–:;%&?€\+#@£$∞§\|\/\[\]\(\)\{\}\"\„\“\'\´«»\n]+","", text.lower())
                 words = nopunct.split(" ")
                 allwords += words
-    for word in allwords:
-        vocabulary[word] = 0
-    return vocabulary
+    vocabulary = Counter(allwords).most_common(m)
+    vocabulary.pop(0)                                        # remove empty word
+    vectorspace = {}
+    for entry in vocabulary:
+        vectorspace[entry[0]] = 0
+    return vectorspace
 
 
-def create_vectors(folder):
+def create_vectors(folder, m=None):
     """Creating feature vectors for every document"""
     vectors = {}
     topics = {}
@@ -55,13 +59,16 @@ def create_vectors(folder):
         subfolder_path = os.path.join(folder, topic)
         for file in os.listdir(subfolder_path):
             file_path = os.path.join(subfolder_path, file)
-            counts = create_vectorspace(folder)
+            counts = create_vectorspace(folder, m)
             with open(file_path, "r", encoding="utf8") as f:
                 text = f.read()
                 nopunct = re.sub(r"\d+|[!,\.\*\-\–:;%&?€\+#@£$∞§\|\/\[\]\(\)\{\}\"\„\“\'\´«»\n]+","", text.lower())
                 words = nopunct.split(" ")
                 for word in words:
-                    counts[word] += 1
+                    if word not in counts:
+                        del word
+                    else:
+                        counts[word] += 1
             filenames[file] = counts
         topics[topic] = filenames
     vectors[folder] = topics
@@ -71,7 +78,7 @@ def create_vectors(folder):
 
 print("Loading data from directory {}.".format(args.foldername))
 
-print(create_vectors(args.foldername))
+
 
 if not args.basedims:
     print("Using full vocabulary.")
@@ -89,16 +96,18 @@ if args.svddims:
 
 print("Writing matrix to {}.".format(args.outputfile))
 
+print(create_vectors(args.foldername, args.basedims))
+
 
 #python3 gendoc.py [-T|--tfidf] [-Sn|--svd n] [-Bm | --base-vocab m] foldername outputfile.txt
 
 
 #preprocess, lowercase, remove punctuations
 #create dictionary with words in all documents
-
 # fill in  dictionary for each document
 
 #turning into list
+
 #put list into panda
 #transform panda np.array on dataframe of panda
 
