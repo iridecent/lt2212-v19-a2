@@ -90,9 +90,30 @@ def create_term_document_matrix(data, columns):
     matrix = pd.DataFrame.from_dict(data, orient="index", columns=columns)
     return matrix
 
+
 def apply_tfidf(matrix):
-    tfidf_matrix = TfidfTransformer().fit_transform(matrix)
-    return tfidf_matrix.toarray()
+    tfidf = TfidfTransformer().fit_transform(matrix)
+    tfidf = tfidf.toarray()
+    return tfidf
+
+def create_tfidf_matrix(tfidf, columnlabels,rowlabels):
+    tfidf_matrix = pd.DataFrame(tfidf)
+    tfidf_matrix.columns = [columnlabels]
+    tfidf_matrix.index = [rowlabels]
+    return tfidf_matrix
+
+
+def get_raw_numpy_array(matrix):        #for svd
+    raw_array = matrix.values
+    return raw_array
+
+
+def create_SVD(array, n):
+    svd = TruncatedSVD(n_components=n)
+    svdmatrix = svd.fit_transform(array)
+    return svdmatrix
+
+
 
 
 
@@ -100,9 +121,16 @@ vectors = create_vectors(args.foldername, args.basedims)
 data, columnlabels, rowlabels = get_data_for_matrix(vectors)
 matrix = create_term_document_matrix(data, columnlabels)
 
-print(data, columnlabels, rowlabels)
-print(matrix)
-print(apply_tfidf(matrix))
+#print(data, columnlabels, rowlabels)
+#print(matrix)
+
+array = get_raw_numpy_array(matrix)
+#tfidf = apply_tfidf(matrix)
+#print(tfidf)
+#print(create_tfidf_matrix(tfidf, columnlabels, rowlabels))
+
+
+print(create_SVD(array,args.svddims))
 
 
 print("Loading data from directory {}.".format(args.foldername))
