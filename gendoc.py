@@ -53,8 +53,6 @@ def create_vectorspace(folder, m=None):
 def create_vectors(folder, m=None):
     """Creating feature vectors for every document"""
     vectors = {}
-    topics = {}
-    filenames = {}
     for topic in os.listdir(folder):
         subfolder_path = os.path.join(folder, topic)
         for file in os.listdir(subfolder_path):
@@ -69,11 +67,42 @@ def create_vectors(folder, m=None):
                         del word
                     else:
                         counts[word] += 1
-            filenames[file] = counts
-        topics[topic] = filenames
-    vectors[folder] = topics
+            vectors[topic+" "+file] = counts
     return vectors
 
+def get_data_for_matrix(vectors):
+    """Modify dictionary of vectors to fit pandas DataFrame"""
+    data = vectors
+    columnlabel = []
+    for k, v in vectors[list(vectors.keys())[0]].items():
+        columnlabel.append(k)
+    rowlabel = []
+    for filename in vectors.keys():
+        rowlabel.append(filename)
+        rows = []
+        for word, count in vectors[filename].items():
+            rows.append(count)
+        data[filename] = rows
+    return data, columnlabel, rowlabel
+
+
+def create_term_document_matrix(data, columns):
+    matrix = pd.DataFrame.from_dict(data, orient="index", columns=columns)
+    return matrix
+
+def apply_tfidf(matrix):
+    tfidf_matrix = TfidfTransformer().fit_transform(matrix)
+    return tfidf_matrix.toarray()
+
+
+
+vectors = create_vectors(args.foldername, args.basedims)
+data, columnlabels, rowlabels = get_data_for_matrix(vectors)
+matrix = create_term_document_matrix(data, columnlabels)
+
+print(data, columnlabels, rowlabels)
+print(matrix)
+print(apply_tfidf(matrix))
 
 
 print("Loading data from directory {}.".format(args.foldername))
@@ -96,10 +125,8 @@ if args.svddims:
 
 print("Writing matrix to {}.".format(args.outputfile))
 
-print(create_vectors(args.foldername, args.basedims))
 
 
-#python3 gendoc.py [-T|--tfidf] [-Sn|--svd n] [-Bm | --base-vocab m] foldername outputfile.txt
 
 
 #preprocess, lowercase, remove punctuations
