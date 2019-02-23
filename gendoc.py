@@ -4,6 +4,7 @@ import glob
 import argparse
 import numpy as np
 import pandas as pd
+import pprint
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfTransformer
 from collections import Counter
@@ -39,51 +40,60 @@ def create_vectorspace(folder, m=None):
             file_path = os.path.join(subfolder_path, file)
             with open(file_path, "r", encoding="utf8") as f:
                 text = f.read()
-                nopunct = re.sub(r"\d+|[!,\.\*\-\–:;%&?€\+#@£$∞§\|\/\[\]\(\)\{\}\"\„\“\'\´«»\n]+","", text.lower())
-                words = nopunct.split(" ")
+                nopunct = re.sub(r"\d+|[!,\.\*\-\–"
+                                 r":;%&?€\+#@£$∞§"
+                                 r"\|\/\[\]\(\)\{\}\""
+                                 r"\„\“\'\´«»\n]+","",
+                                 text.lower())          # preprocessing: strip punctuation and special characters
+                words = nopunct.split(" ")              # preprocessing: tokenization
                 allwords += words
-    vocabulary = Counter(allwords).most_common(m)
-    vocabulary.pop(0)                                        # remove empty word
+    vocabulary = Counter(allwords).most_common(m)       # if -B is set takes m most common words
+    vocabulary.pop(0)                                   # remove empty string
     vectorspace = {}
-    for entry in vocabulary:
-        vectorspace[entry[0]] = 0
+    for entry in vocabulary:                            # vocabulary is a list of two tuples each containing word and count
+        vectorspace[entry[0]] = 0                       # set all values to 0 to get a blueprint for the countvectors of the files
     return vectorspace
 
 
 def create_vectors(folder, m=None):
-    """Creating feature vectors for every document"""
+    """Creating feature (i.e. count) vectors for every document"""
     vectors = {}
     for topic in os.listdir(folder):
         subfolder_path = os.path.join(folder, topic)
         for file in os.listdir(subfolder_path):
             file_path = os.path.join(subfolder_path, file)
-            counts = create_vectorspace(folder, m)
+            counts = create_vectorspace(folder, m)         # initialize vectorspace dict with zero-counts for every file
             with open(file_path, "r", encoding="utf8") as f:
                 text = f.read()
-                nopunct = re.sub(r"\d+|[!,\.\*\-\–:;%&?€\+#@£$∞§\|\/\[\]\(\)\{\}\"\„\“\'\´«»\n]+","", text.lower())
+                nopunct = re.sub(r"\d+|[!,\.\*\-\–"
+                                 r":;%&?€\+#@£$"
+                                 r"∞§\|\/\[\]\(\)\{"
+                                 r"\}\"\„\“\'\´«»\n]+","", text.lower())
                 words = nopunct.split(" ")
                 for word in words:
-                    if word not in counts:
+                    if word not in counts:                 # if word was filtered by -B m is is deleted
                         del word
                     else:
-                        counts[word] += 1
-            vectors[topic+" "+file] = counts
+                        counts[word] += 1                  # vectorspace dict is updated by count of word in that file
+            vectors[topic+" "+file] = counts               # concatenate subfoldername and filename
     return vectors
+
+
 
 def get_data_for_matrix(vectors):
     """Modify dictionary of vectors to fit pandas DataFrame"""
     data = vectors
-    columnlabel = []
-    for k, v in vectors[list(vectors.keys())[0]].items():
-        columnlabel.append(k)
-    rowlabel = []
+    columnlabels = []
+    for k, v in vectors[list(vectors.keys())[0]].items():   # get tokennames out of random file - tokens are the same for each file
+        columnlabels.append(k)
+    rowlabels = []
     for filename in vectors.keys():
-        rowlabel.append(filename)
+        rowlabels.append(filename)                          # get filenames as rowlabels
         rows = []
-        for word, count in vectors[filename].items():
+        for word, count in vectors[filename].items():       # remove wordnames and create list only containing counts in the same order as the columnlabels
             rows.append(count)
-        data[filename] = rows
-    return data, columnlabel, rowlabel
+        data[filename] = rows                               # map list of integers (vector) to corresponding file
+    return data, columnlabels, rowlabels                    #todo: remove dublicate articles
 
 
 def create_term_document_matrix(data, columns):
@@ -103,7 +113,7 @@ def create_tfidf_matrix(tfidf, columnlabels,rowlabels):
     return tfidf_matrix
 
 
-def get_raw_numpy_array(matrix):        #for svd
+def get_raw_numpy_array(matrix):                            # TrucatedSVD takes a raw array
     raw_array = matrix.values
     return raw_array
 
@@ -114,27 +124,7 @@ def create_SVD(array, n):
     return svdmatrix
 
 
-
-
-
-vectors = create_vectors(args.foldername, args.basedims)
-data, columnlabels, rowlabels = get_data_for_matrix(vectors)
-matrix = create_term_document_matrix(data, columnlabels)
-
-#print(data, columnlabels, rowlabels)
-#print(matrix)
-
-array = get_raw_numpy_array(matrix)
-#tfidf = apply_tfidf(matrix)
-#print(tfidf)
-#print(create_tfidf_matrix(tfidf, columnlabels, rowlabels))
-
-
-print(create_SVD(array,args.svddims))
-
-
 print("Loading data from directory {}.".format(args.foldername))
-
 
 
 if not args.basedims:
@@ -154,17 +144,34 @@ if args.svddims:
 print("Writing matrix to {}.".format(args.outputfile))
 
 
+vectors = create_vectors(args.foldername, args.basedims)
+data, columnlabels, rowlabels = get_data_for_matrix(vectors)
+matrix = create_term_document_matrix(data, columnlabels)
+tfidf = apply_tfidf(matrix)
+tfidf_matrix = create_tfidf_matrix(tfidf, columnlabels, rowlabels)
+raw_array = get_raw_numpy_array(matrix)
+
+np.set_printoptions(suppress=True, linewidth=np.nan, threshold=np.nan)
+pd.set_option("display.width", 10**100000)
 
 
+if not args.tfidf and not args.svddims:
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        sys.stdout = open(args.outputfile, "w")
+        print(matrix)
 
-#preprocess, lowercase, remove punctuations
-#create dictionary with words in all documents
-# fill in  dictionary for each document
+if args.tfidf and not args.svddims:
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        sys.stdout = open(args.outputfile, "w")
+        print(tfidf_matrix)
 
-#turning into list
+if not args.tfidf and args.svddims:
+    svd = create_SVD(raw_array, args.svddims)
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        sys.stdout = open(args.outputfile, "w")
+        print(svd)
 
-#put list into panda
-#transform panda np.array on dataframe of panda
-
-
-#have list and dictionary at the same time: [3,5,6, ..., 7, ..] dict: index of list -> token and dict: tokens -> index
+if args.tfidf and args.svddims:
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        sys.stdout = open(args.outputfile, "w")
+        print(create_SVD(tfidf, args.svddims))
