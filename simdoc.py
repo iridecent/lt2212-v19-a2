@@ -15,4 +15,18 @@ parser.add_argument("vectorfile", type=str,
 
 args = parser.parse_args()
 
+
+def get_raw_numpy_array(matrix):
+    raw_array = matrix.values
+    return raw_array
+
+
+data = np.loadtxt(args.vectorfile, dtype='i', delimiter=',')
+print(data)
+
+
+
 print("Reading matrix from {}.".format(args.vectorfile))
+
+
+
