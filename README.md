@@ -6,21 +6,21 @@ My name: Iris Epple
 
 ## Additional instructions
 
-Document here additional command-line instructions or other details you
-want us to know about running your code.
+gendoc: 
+2 additional optional arguments: Two csv files, one for each topic, to use as input for simdoc.
 
-## File naming convention
+simdoc: takes two csv files as input
 
-(Delete this section if it's fairly obvious what output file was
-created with what parameters.)
+Reduced the number of articles to 300 in each topic.
+
 
 ## Results and discussion
 
+
+
 ### Vocabulary restriction.
 
-(Write what you chose for the vocabulary restriction for output file
-(2), you can give a brief impressionistic justification for why in one
-sentence or less.)
+I chose 20, to get a few more than the obvious ones (i.e. the stop words).
 
 ### Result table
 

@@ -126,24 +126,30 @@ def create_term_document_matrix(data, columns):
 
 
 def apply_tfidf(matrix):
-    """"""
+    """Transform raw counts to tfidf values"""
     tfidf = TfidfTransformer().fit_transform(matrix)
     tfidf_values = tfidf.toarray()
     return tfidf_values
 
 def create_tfidf_matrix(tfidf_values, columnlabels,rowlabels):
+    """Feed tfidf values into DataFrame"""
     tfidf_matrix = pd.DataFrame(tfidf_values)
     tfidf_matrix.columns = [columnlabels]
     tfidf_matrix.index = [rowlabels]
-    return tfidf_matrix
+    tfidf_dict = {}
+    for i, label in enumerate(columnlabels):
+        tfidf_dict[label] = tfidf_values[i]
+    return tfidf_matrix, tfidf_dict
 
 
-def get_raw_numpy_array(matrix):                            # TrucatedSVD takes a raw array
+def get_raw_numpy_array(matrix):
+    """Get raw np array which is needed for the TruncatedSVD function"""
     raw_array = matrix.values
     return raw_array
 
 
 def create_SVD(array, n):
+    """Feed raw array into TruncatedSVD function. Outputs SVD matrix of dimensionality n"""
     svd = TruncatedSVD(n_components=n)
     svdm = svd.fit_transform(array)
     svdmatrix = pd.DataFrame(svdm)
@@ -151,6 +157,7 @@ def create_SVD(array, n):
 
 
 def separate_topics(folder, data):
+    """Separate the two different topics to be able to create two different csv files"""
     topic1, topic2 = os.listdir(folder)
     vect1 = []
     vect2 = []
@@ -191,8 +198,12 @@ all_data, all_columnlabels, all_rowlabels = get_data_for_matrix(vectors)
 data, columnlabels, rowlabels, dropped_articles = remove_duplicate_vectors(all_data, all_columnlabels, all_rowlabels)
 matrix = create_term_document_matrix(data, columnlabels)
 tfidf_values = apply_tfidf(matrix)
-tfidf_matrix = create_tfidf_matrix(tfidf_values, columnlabels, rowlabels)
+tfidf_matrix, tfidf_dict = create_tfidf_matrix(tfidf_values, columnlabels, rowlabels)
 raw_array = get_raw_numpy_array(matrix)
+
+print(tfidf_dict)
+
+
 
 print("The following articles got dropped: ", dropped_articles)
 
@@ -205,6 +216,10 @@ if args.vectorfile1 and not args.vectorfile2:
 if not args.vectorfile1 and args.vectorfile2:
     print("Please enter two csv output files, one for each topic!")
 
+if args.basedims and args.svddims:
+    if args.basedims < args.svddims:
+        print("The number of SVD dimensions must be bigger than the number of used word types.")
+
 if not args.tfidf and not args.svddims:
     vectors1, vectors2 = separate_topics(args.foldername, data)
     vectors1.to_csv(args.vectorfile1, header=None, index=None)
@@ -213,21 +228,27 @@ if not args.tfidf and not args.svddims:
         sys.stdout = open(args.outputfile, "w")
         print(matrix)
 
-if args.tfidf and not args.svddims and args.vectorfile1 and args.vectorfile2:
-    print("You can't calculate cosine similarity from tfidf values! No csv file produced.")
+if args.tfidf and not args.svddims:
+    vectors1, vectors2 = separate_topics(args.foldername, tfidf_dict)         #FIX!!
+    vectors1.to_csv(args.vectorfile1, header=None, index=None)
+    vectors2.to_csv(args.vectorfile2, header=None, index=None)
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         sys.stdout = open(args.outputfile, "w")
         print(tfidf_matrix)
 
-if not args.tfidf and args.svddims and args.vectorfile1 and vectorfile2:
-    print("You can't calculate cosine similarity from svd matrix! No csv file produced.")
+"""if not args.tfidf and args.svddims:
+    vectors1, vectors2 = separate_topics(args.foldername, data)  # FIX!!
+    vectors1.to_csv(args.vectorfile1, header=None, index=None)
+    vectors2.to_csv(args.vectorfile2, header=None, index=None)
     svd = create_SVD(raw_array, args.svddims)
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         sys.stdout = open(args.outputfile, "w")
         print(svd)
 
-if args.tfidf and args.svddims and args.vectorfile1 and args.vectorfile2:
-    print("You need raw counts to calculate cosine similarity! No csv file produced.")
+if args.tfidf and args.svddims:
+    vectors1, vectors2 = separate_topics(args.foldername, data)  # FIX!!
+    vectors1.to_csv(args.vectorfile1, header=None, index=None)
+    vectors2.to_csv(args.vectorfile2, header=None, index=None)
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         sys.stdout = open(args.outputfile, "w")
-        print(create_SVD(tfidf, args.svddims))
+        print(create_SVD(tfidf_values, args.svddims))"""

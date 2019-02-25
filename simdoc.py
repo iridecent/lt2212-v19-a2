@@ -23,9 +23,6 @@ data1 = np.loadtxt(args.vectorfile1, dtype='i', delimiter=',')
 data2 = np.loadtxt(args.vectorfile2, dtype='i', delimiter=',')
 
 
-print(data1, data2)
-
-
 
 def compute_cosine_similarities(array1, array2=None):
     similarities = []
