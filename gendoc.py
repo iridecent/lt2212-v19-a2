@@ -10,10 +10,6 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from collections import Counter
 from collections import defaultdict
 
-# gendoc.py -- Don't forget to put a reasonable amount code comments
-# in so that we better understand what you're doing when we grade!
-
-# add whatever additional imports you may need here
 
 parser = argparse.ArgumentParser(description="Generate term-document matrix.")
 parser.add_argument("-T", "--tfidf", action="store_true", help="Apply tf-idf to the matrix.")
@@ -27,11 +23,13 @@ parser.add_argument("foldername", type=str,
                     help="The base folder name containing the two topic subfolders.")
 parser.add_argument("outputfile", type=str,
                     help="The name of the output file for the matrix data.")
-parser.add_argument ("csvfile", type=str, default=None,
-                     help="The name of the csv file to calculate cosine similarity.")
+parser.add_argument("vectorfile1", type=str, default=None,
+                     help="The name of the csv file of the first topic to calculate cosine similarity.")
+
+parser.add_argument("vectorfile2", type=str, default=None,
+                     help="The name of the csv file of the second topic to calculate cosine similarity.")
 
 args = parser.parse_args()
-
 
 
 def create_vectorspace(folder, m=None):
@@ -100,38 +98,41 @@ def get_data_for_matrix(vectors):
     return all_data, all_columnlabels, all_rowlabels
 
 
-
 def remove_duplicate_vectors(all_data, all_columnlabels, all_rowlabels):
+    """Identifies and removes duplicate vectors"""
     data = {}
     for k, v in all_data.items():
-        data[k] = tuple(v)
+        data[k] = tuple(v)                                      # turn vector into tuple to make it non-hashable
     upside_down = defaultdict(list)
     for name, vect in data.items():
-        upside_down[vect].append(name)
+        upside_down[vect].append(name)                          # vector as key and append all article names to the value with same vector
     dropped_articles = []
     for vec in upside_down.keys():
-        if len(upside_down[vec])>1:
+        if len(upside_down[vec])>1:                             # check if there are more than one article with particular vector
             for art in upside_down[vec][1:]:
-                del data[art]
-                dropped_articles.append(art)
+                del data[art]                                   # delete all article vectors after the first one with the same
+                dropped_articles.append(art)                    # keep track of dropped articles
                 all_rowlabels.remove(art)
-    columnlabels = all_columnlabels
+    columnlabels = all_columnlabels                             # columns stay the same
     rowlabels = sorted(data.keys())
     return data, columnlabels, rowlabels, dropped_articles
 
 
+
 def create_term_document_matrix(data, columns):
+    """Feed dictionary into DataFrame"""
     matrix = pd.DataFrame.from_dict(data, orient="index", columns=columns)
     return matrix
 
 
 def apply_tfidf(matrix):
+    """"""
     tfidf = TfidfTransformer().fit_transform(matrix)
-    tfidf = tfidf.toarray()
-    return tfidf
+    tfidf_values = tfidf.toarray()
+    return tfidf_values
 
-def create_tfidf_matrix(tfidf, columnlabels,rowlabels):
-    tfidf_matrix = pd.DataFrame(tfidf)
+def create_tfidf_matrix(tfidf_values, columnlabels,rowlabels):
+    tfidf_matrix = pd.DataFrame(tfidf_values)
     tfidf_matrix.columns = [columnlabels]
     tfidf_matrix.index = [rowlabels]
     return tfidf_matrix
@@ -147,6 +148,21 @@ def create_SVD(array, n):
     svdm = svd.fit_transform(array)
     svdmatrix = pd.DataFrame(svdm)
     return svdmatrix
+
+
+def separate_topics(folder, data):
+    topic1, topic2 = os.listdir(folder)
+    vect1 = []
+    vect2 = []
+    for k,v in data.items():
+        if topic1 in k:
+            vect1.append(v)
+        else:
+            vect2.append(v)
+    vectors1 = pd.DataFrame(vect1)
+    vectors2 = pd.DataFrame(vect2)
+    return vectors1, vectors2
+
 
 
 print("Loading data from directory {}.".format(args.foldername))
@@ -174,8 +190,8 @@ vectors = create_vectors(args.foldername, args.basedims)
 all_data, all_columnlabels, all_rowlabels = get_data_for_matrix(vectors)
 data, columnlabels, rowlabels, dropped_articles = remove_duplicate_vectors(all_data, all_columnlabels, all_rowlabels)
 matrix = create_term_document_matrix(data, columnlabels)
-tfidf = apply_tfidf(matrix)
-tfidf_matrix = create_tfidf_matrix(tfidf, columnlabels, rowlabels)
+tfidf_values = apply_tfidf(matrix)
+tfidf_matrix = create_tfidf_matrix(tfidf_values, columnlabels, rowlabels)
 raw_array = get_raw_numpy_array(matrix)
 
 print("The following articles got dropped: ", dropped_articles)
@@ -183,28 +199,35 @@ print("The following articles got dropped: ", dropped_articles)
 np.set_printoptions(suppress=True, linewidth=np.nan, threshold=np.nan)
 pd.set_option("display.width", 10**1000)
 
+if args.vectorfile1 and not args.vectorfile2:
+    print("Please enter two csv output files, one for each topic!")
+
+if not args.vectorfile1 and args.vectorfile2:
+    print("Please enter two csv output files, one for each topic!")
 
 if not args.tfidf and not args.svddims:
-    matrix.to_csv(args.csvfile, index=True)
+    vectors1, vectors2 = separate_topics(args.foldername, data)
+    vectors1.to_csv(args.vectorfile1, header=None, index=None)
+    vectors2.to_csv(args.vectorfile2, header=None, index=None)
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         sys.stdout = open(args.outputfile, "w")
         print(matrix)
 
-if args.tfidf and not args.svddims and args.csvfile:
-    print("You can't calculate cosine similarity from tfidf values! No csv produced.")
+if args.tfidf and not args.svddims and args.vectorfile1 and args.vectorfile2:
+    print("You can't calculate cosine similarity from tfidf values! No csv file produced.")
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         sys.stdout = open(args.outputfile, "w")
         print(tfidf_matrix)
 
-if not args.tfidf and args.svddims and args.csvfile:
-    print("You can't calculate cosine similarity from svd matrix! No csv produced.")
+if not args.tfidf and args.svddims and args.vectorfile1 and vectorfile2:
+    print("You can't calculate cosine similarity from svd matrix! No csv file produced.")
     svd = create_SVD(raw_array, args.svddims)
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         sys.stdout = open(args.outputfile, "w")
         print(svd)
 
-if args.tfidf and args.svddims:
-    print("You need raw counts to calculate cosine similarity! No csv produced.")
+if args.tfidf and args.svddims and args.vectorfile1 and args.vectorfile2:
+    print("You need raw counts to calculate cosine similarity! No csv file produced.")
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         sys.stdout = open(args.outputfile, "w")
         print(create_SVD(tfidf, args.svddims))
