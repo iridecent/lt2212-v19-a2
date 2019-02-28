@@ -38,5 +38,22 @@ I chose 20, to get a few more than the obvious ones (i.e. the stop words).
 
 ### The hypothesis in your own words
 
+I am not sure about my numbers, since  cosine similarity of zero between two documents 
+means that they have no words in common. (see output 3 & 4) 
+Duplicate documents where removed, therefore there be
+any identical vectors. But most of the vectors, at least within the 
+same topic should have some words in common (which is e.g. the stopwords). 
+But as tf-ifd is applied, the impact of words with very high and very low frequency is reduced.
+This means that after applying tf-idf to the raw counts, the value for each word is different 
+in every document, even for two documents which had before for example a count of 15 for "a", 
+since the whole document is taken into account. 
+Against this background it is not too surprising anymore that there are apparently no two
+vectors with the same value in one particular position.
+ 
+SVD truncation seems to make no difference  (compared to raw counts - output 1 vs 7 & 8, 
+which could be due to the nature of SVD - i.e redistributing features and values to yield the 
+demanded dimension, but with keeping the relative distributions and differences
+
 ### Discussion of trends in results in light of the hypothesis
 
+see above
